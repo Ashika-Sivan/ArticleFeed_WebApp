@@ -2,6 +2,7 @@
   "name": "article-feeds-web-app",
   "version": "1.0.0",
   "description": "Article Feeds Web Application built with Node.js/Express MVC and React/Vite",
+  "type": "module",
   "scripts": {
     "server": "npm --prefix server run dev",
     "client": "npm --prefix client run dev",
