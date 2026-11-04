@@ -5,7 +5,7 @@ import { IUserRepository } from '../interfaces/repositories/IUserRepository.js';
 import { BaseRepository } from './baseRepository.js';
 
 export class UserRepository
-  extends BaseRepository<IUserDocument, Partial<IUser>>
+  extends BaseRepository<IUserDocument>
   implements IUserRepository
 {
   constructor(model: Model<IUserDocument> = User) {
@@ -59,6 +59,15 @@ export class UserRepository
   ): Promise<IUserDocument | null> {
     return await this.model.findByIdAndUpdate(userId, {
       $addToSet: { blockedArticles: articleId },
+    });
+  }
+
+  async removeBlockedArticle(
+    userId: string | Types.ObjectId,
+    articleId: string | Types.ObjectId
+  ): Promise<IUserDocument | null> {
+    return await this.model.findByIdAndUpdate(userId, {
+      $pull: { blockedArticles: articleId },
     });
   }
 

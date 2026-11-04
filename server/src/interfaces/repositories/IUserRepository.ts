@@ -1,19 +1,23 @@
-import { Types } from 'mongoose';
+import { Types, UpdateQuery } from 'mongoose';
 import { IUserDocument, IUser } from '../../types/index.js';
-import { IWriteRepository } from './IBaseRepository.js';
+import { IBaseRepository } from './IBaseRepository.js';
 
-export interface IUserReader {
+export interface IUserRepository extends IBaseRepository<IUserDocument> {
   findById(id: string | Types.ObjectId, projection?: string): Promise<IUserDocument | null>;
   findByIdWithPassword(id: string | Types.ObjectId): Promise<IUserDocument | null>;
   findByEmail(email: string): Promise<IUserDocument | null>;
   findByPhone(phone: string): Promise<IUserDocument | null>;
   findByEmailOrPhone(email: string, phone: string): Promise<IUserDocument | null>;
   findByIdentifier(identifier: string): Promise<IUserDocument | null>;
-}
-
-export interface IUserWriter extends IWriteRepository<IUserDocument, Partial<IUser>> {
-  updateById(id: string | Types.ObjectId, updateData: Partial<IUser>): Promise<IUserDocument | null>;
+  updateById(
+    id: string | Types.ObjectId,
+    updateData: UpdateQuery<IUserDocument> | Partial<IUser>
+  ): Promise<IUserDocument | null>;
   addBlockedArticle(
+    userId: string | Types.ObjectId,
+    articleId: string | Types.ObjectId
+  ): Promise<IUserDocument | null>;
+  removeBlockedArticle(
     userId: string | Types.ObjectId,
     articleId: string | Types.ObjectId
   ): Promise<IUserDocument | null>;
@@ -26,5 +30,3 @@ export interface IUserWriter extends IWriteRepository<IUserDocument, Partial<IUs
     status: boolean
   ): Promise<IUserDocument | null>;
 }
-
-export interface IUserRepository extends IUserReader, IUserWriter {}

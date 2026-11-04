@@ -7,48 +7,40 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Check active session on initial load
   useEffect(() => {
-    const checkAuthStatus = async () => {
+    const restoreSession = async () => {
       try {
-        const data = await authService.getMe();
-        if (data.success && data.user) {
-          setUser(data.user);
-        } else {
-          setUser(null);
-        }
-      } catch (err) {
+
+        await authService.refresh();
+
+
+        const res = await authService.getMe();
+        if (res.success && res.user) setUser(res.user);
+      } catch {
         setUser(null);
       } finally {
         setLoading(false);
       }
     };
 
-    checkAuthStatus();
+    restoreSession();
   }, []);
 
-  const register = async (userData) => {
-    const data = await authService.register(userData);
-    return data;
-  };
-
-  const verifyOtp = async (payload) => {
-    const data = await authService.verifyOtp(payload);
-    if (data.user) {
-      setUser(data.user);
-    }
-    return data;
-  };
-
-  const resendOtp = async (payload) => {
-    return await authService.resendOtp(payload);
-  };
+  useEffect(() => {
+    const onExpired = () => setUser(null);
+    window.addEventListener('auth:sessionExpired', onExpired);
+    return () => window.removeEventListener('auth:sessionExpired', onExpired);
+  }, []);
 
   const login = async (credentials) => {
     const data = await authService.login(credentials);
-    if (data.user) {
-      setUser(data.user);
-    }
+    if (data?.user) setUser(data.user);
+    return data;
+  };
+
+  const register = async (userData) => {
+    const data = await authService.register(userData);
+    if (data?.user) setUser(data.user);
     return data;
   };
 
@@ -62,23 +54,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const updateUser = (updatedUser) => {
-    setUser(updatedUser);
-  };
+  const updateUser = (updatedUser) => setUser(updatedUser);
 
   return (
     <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        isAuthenticated: !!user,
-        register,
-        verifyOtp,
-        resendOtp,
-        login,
-        logout,
-        updateUser,
-      }}
+      value={{ user, loading, isAuthenticated: !!user, login, register, logout, updateUser }}
     >
       {children}
     </AuthContext.Provider>

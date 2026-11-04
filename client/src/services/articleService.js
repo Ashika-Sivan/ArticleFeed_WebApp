@@ -11,8 +11,8 @@ export const articleService = {
     return res.data;
   },
 
-  async getMyArticles() {
-    const res = await api.get('/articles/my');
+  async getMyArticles(params = {}) {
+    const res = await api.get('/articles/my', { params });
     return res.data;
   },
 
@@ -43,6 +43,16 @@ export const articleService = {
 
   async blockArticle(id) {
     const res = await api.post(`/articles/${id}/block`);
+    return res.data;
+  },
+
+  async unblockArticle(id) {
+    const res = await api.post(`/articles/${id}/unblock`);
+    return res.data;
+  },
+
+  async getBlockedArticles(params = {}) {
+    const res = await api.get('/articles/blocked', { params });
     return res.data;
   },
 };

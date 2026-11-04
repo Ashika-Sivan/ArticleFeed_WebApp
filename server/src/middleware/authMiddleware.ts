@@ -9,24 +9,19 @@ export class AuthMiddleware {
     private readonly userRepository: IUserRepository
   ) {}
 
+  /**
+   * Protects routes by verifying the short-lived access token stored
+   * in the `accessToken` httpOnly cookie.
+   *
+   * On expiry the client calls POST /api/auth/refresh (which uses the
+   * refreshToken cookie) to get a new pair — then retries the request.
+   */
   protect = async (
     req: AuthRequest,
     res: Response,
     next: NextFunction
   ): Promise<Response | void> => {
-    let token: string | undefined;
-
-    // 1. Check cookies first
-    if (req.cookies && req.cookies.token) {
-      token = req.cookies.token;
-    }
-    // 2. Fallback to Authorization Bearer header
-    else if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith('Bearer ')
-    ) {
-      token = req.headers.authorization.split(' ')[1];
-    }
+    const token: string | undefined = req.cookies?.accessToken;
 
     if (!token) {
       return res.status(401).json({

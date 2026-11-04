@@ -1,15 +1,10 @@
-import { Types } from 'mongoose';
+import { UpdateQuery, Types } from 'mongoose';
 
-export interface IReadRepository<T, TOptions = unknown> {
-  findById(id: string | Types.ObjectId, options?: TOptions): Promise<T | null>;
-}
-
-export interface IWriteRepository<T, TCreate = Partial<T>> {
-  create(data: TCreate): Promise<T>;
+export interface IBaseRepository<T> {
+  create(data: Partial<T>): Promise<T>;
+  findById(id: string | Types.ObjectId): Promise<T | null>;
+  findAll(): Promise<T[]>;
+  updateById(id: string | Types.ObjectId, data: UpdateQuery<T>): Promise<T | null>;
   deleteById(id: string | Types.ObjectId): Promise<T | null>;
-  save(doc: T): Promise<T>;
+  save(doc: any): Promise<T>;
 }
-
-export interface IBaseRepository<T, TCreate = Partial<T>, TOptions = unknown>
-  extends IReadRepository<T, TOptions>,
-    IWriteRepository<T, TCreate> {}

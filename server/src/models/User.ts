@@ -42,7 +42,7 @@ const userSchema = new Schema<IUserDocument>(
     },
     isVerified: {
       type: Boolean,
-      default: false,
+      default: true,
     },
     blockedArticles: [
       {

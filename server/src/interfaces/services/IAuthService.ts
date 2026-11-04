@@ -14,21 +14,26 @@ export interface SanitizedUser {
 }
 
 export interface AuthResult {
-  token: string;
+  accessToken: string;
+  refreshToken: string;
   user: SanitizedUser;
 }
 
 export interface RegisterResult {
   message: string;
-  email: string;
-  requiresOtp: boolean;
-  devOtp?: string;
+  accessToken: string;
+  refreshToken: string;
+  user: SanitizedUser;
+}
+
+export interface RefreshResult {
+  accessToken: string;
+  refreshToken: string;
 }
 
 export interface IAuthService {
   register(data: RegisterDTO): Promise<RegisterResult>;
-  verifyOtp(email: string, otp: string): Promise<AuthResult>;
-  resendOtp(email: string): Promise<{ message: string; devOtp?: string }>;
   login(identifier?: string, password?: string): Promise<AuthResult>;
+  refresh(refreshToken: string): Promise<RefreshResult>;
   getProfile(userId: string | Types.ObjectId): Promise<IUserDocument>;
 }

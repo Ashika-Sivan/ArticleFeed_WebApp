@@ -3,7 +3,9 @@ import {
   CreateArticleDTO,
   UpdateArticleDTO,
   FeedQueryParams,
+  MyArticlesQueryParams,
   IArticleDocument,
+  PaginationMeta,
   IUser,
 } from '../types/index.js';
 import {
@@ -29,12 +31,16 @@ export class ArticleService implements IArticleService {
   constructor(
     private readonly articleRepo: IArticleRepository,
     private readonly userRepo: IUserRepository
-  ) {}
+  ) { }
 
   async getFeedArticles(
     userId: string | Types.ObjectId,
-    { category, search }: FeedQueryParams
-  ): Promise<{ articles: IArticleDocument[]; userPreferences: string[] }> {
+    { category, search, page, limit }: FeedQueryParams
+  ): Promise<{
+    articles: IArticleDocument[];
+    userPreferences: string[];
+    pagination: PaginationMeta;
+  }> {
     const user = await this.userRepo.findById(userId);
     if (!user) {
       const error: AppError = new Error(MESSAGES.USER.NOT_FOUND);
@@ -42,17 +48,29 @@ export class ArticleService implements IArticleService {
       throw error;
     }
 
-    const articles = await this.articleRepo.findFeedArticles({
-      excludeAuthorId: user._id,
+    const pageNum = Math.max(1, Number(page) || 1);
+    const limitNum = Math.max(1, Math.min(100, Number(limit) || 6));
+
+    const result = await this.articleRepo.findFeedArticles({
       blockedArticleIds: user.blockedArticles || [],
       category,
       userPreferences: user.preferences,
       search,
+      page: pageNum,
+      limit: limitNum,
     });
 
     return {
-      articles,
+      articles: result.articles,
       userPreferences: user.preferences,
+      pagination: {
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+        hasNextPage: result.page < result.totalPages,
+        hasPrevPage: result.page > 1,
+      },
     };
   }
 
@@ -143,6 +161,60 @@ export class ArticleService implements IArticleService {
     return { message: MESSAGES.ARTICLE.BLOCKED_SUCCESS };
   }
 
+  async unblockArticle(
+    articleId: string | Types.ObjectId,
+    userId: string | Types.ObjectId
+  ): Promise<{ message: string }> {
+    const article = await this.articleRepo.findById(articleId);
+    if (!article) {
+      const error: AppError = new Error(MESSAGES.ARTICLE.NOT_FOUND);
+      error.statusCode = 404;
+      throw error;
+    }
+
+    await this.userRepo.removeBlockedArticle(userId, article._id);
+    await this.articleRepo.removeBlockedBy(article._id, userId);
+
+    return { message: MESSAGES.ARTICLE.UNBLOCKED_SUCCESS };
+  }
+
+  async getBlockedArticles(
+    userId: string | Types.ObjectId,
+    query: { page?: number; limit?: number; search?: string } = {}
+  ): Promise<{
+    articles: IArticleDocument[];
+    pagination: PaginationMeta;
+  }> {
+    const user = await this.userRepo.findById(userId);
+    if (!user) {
+      const error: AppError = new Error(MESSAGES.USER.NOT_FOUND);
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const pageNum = Math.max(1, Number(query.page) || 1);
+    const limitNum = Math.max(1, Math.min(100, Number(query.limit) || 10));
+
+    const result = await this.articleRepo.findBlockedArticles({
+      articleIds: user.blockedArticles || [],
+      search: query.search,
+      page: pageNum,
+      limit: limitNum,
+    });
+
+    return {
+      articles: result.articles,
+      pagination: {
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+        hasNextPage: result.page < result.totalPages,
+        hasPrevPage: result.page > 1,
+      },
+    };
+  }
+
   async createArticle(
     userId: string | Types.ObjectId,
     data: CreateArticleDTO
@@ -164,8 +236,8 @@ export class ArticleService implements IArticleService {
       tags: Array.isArray(tags)
         ? tags
         : typeof tags === 'string'
-        ? tags.split(',').map((t) => t.trim()).filter(Boolean)
-        : [],
+          ? tags.split(',').map((t) => t.trim()).filter(Boolean)
+          : [],
       category,
       author: userObjId,
     });
@@ -173,8 +245,34 @@ export class ArticleService implements IArticleService {
     return article;
   }
 
-  async getMyArticles(userId: string | Types.ObjectId): Promise<IArticleDocument[]> {
-    return await this.articleRepo.findByAuthor(userId);
+  async getMyArticles(
+    userId: string | Types.ObjectId,
+    query?: MyArticlesQueryParams
+  ): Promise<{
+    articles: IArticleDocument[];
+    pagination: PaginationMeta;
+  }> {
+    const pageNum = Math.max(1, Number(query?.page) || 1);
+    const limitNum = Math.max(1, Math.min(100, Number(query?.limit) || 6));
+
+    const result = await this.articleRepo.findByAuthor({
+      authorId: userId,
+      search: query?.search,
+      page: pageNum,
+      limit: limitNum,
+    });
+
+    return {
+      articles: result.articles,
+      pagination: {
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages,
+        hasNextPage: result.page < result.totalPages,
+        hasPrevPage: result.page > 1,
+      },
+    };
   }
 
   async getArticleById(articleId: string | Types.ObjectId): Promise<IArticleDocument> {
@@ -215,8 +313,8 @@ export class ArticleService implements IArticleService {
       article.tags = Array.isArray(tags)
         ? tags
         : typeof tags === 'string'
-        ? tags.split(',').map((t) => t.trim()).filter(Boolean)
-        : [];
+          ? tags.split(',').map((t) => t.trim()).filter(Boolean)
+          : [];
     }
     if (category) article.category = category;
 

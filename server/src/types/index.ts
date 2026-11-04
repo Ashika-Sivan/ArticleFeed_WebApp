@@ -89,4 +89,27 @@ export interface UpdateArticleDTO {
 export interface FeedQueryParams {
   category?: string;
   search?: string;
+  page?: string | number;
+  limit?: string | number;
 }
+
+export interface MyArticlesQueryParams {
+  search?: string;
+  page?: string | number;
+  limit?: string | number;
+}
+
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
+export interface PaginatedResult<T> {
+  articles: T[];
+  pagination: PaginationMeta;
+}
+

@@ -61,6 +61,31 @@ export class ArticleController {
     });
   });
 
+  unblockArticle = asyncHandler(async (req: AuthRequest, res: Response) => {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: MESSAGES.AUTH.UNAUTHENTICATED });
+      return;
+    }
+    const result = await this.articleServ.unblockArticle(getParamId(req.params.id), req.user._id);
+    res.status(200).json({
+      success: true,
+      ...result,
+    });
+  });
+
+  getBlockedArticles = asyncHandler(async (req: AuthRequest, res: Response) => {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: MESSAGES.AUTH.UNAUTHENTICATED });
+      return;
+    }
+    const result = await this.articleServ.getBlockedArticles(req.user._id, req.query);
+    res.status(200).json({
+      success: true,
+      count: result.articles.length,
+      ...result,
+    });
+  });
+
   createArticle = asyncHandler(async (req: AuthRequest, res: Response) => {
     if (!req.user) {
       res.status(401).json({ success: false, message: MESSAGES.AUTH.UNAUTHENTICATED });
@@ -79,10 +104,11 @@ export class ArticleController {
       res.status(401).json({ success: false, message: MESSAGES.AUTH.UNAUTHENTICATED });
       return;
     }
-    const articles = await this.articleServ.getMyArticles(req.user._id);
+    const result = await this.articleServ.getMyArticles(req.user._id, req.query);
     res.status(200).json({
       success: true,
-      articles,
+      count: result.articles.length,
+      ...result,
     });
   });
 

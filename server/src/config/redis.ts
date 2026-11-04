@@ -9,7 +9,7 @@ class RedisClient {
       this._client = createClient({
         url: process.env.REDIS_URL || 'redis://localhost:6379',
         socket: {
-          reconnectStrategy: () => false, // Stop immediately if Redis daemon is offline
+          reconnectStrategy: () => false,
         },
       });
       this._client.on('error', () => {

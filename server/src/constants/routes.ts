@@ -9,6 +9,7 @@ export const AUTH_ROUTES = {
   ROOT: '/',
   REGISTER: '/register',
   LOGIN: '/login',
+  REFRESH: '/refresh',
   LOGOUT: '/logout',
   ME: '/me',
   VERIFY_OTP: '/verify-otp',
@@ -26,8 +27,10 @@ export const ARTICLE_ROUTES = {
   ROOT: '/',
   FEED: '/feed',
   MY_ARTICLES: '/my',
+  BLOCKED: '/blocked',
   BY_ID: '/:id',
   LIKE: '/:id/like',
   DISLIKE: '/:id/dislike',
   BLOCK: '/:id/block',
+  UNBLOCK: '/:id/unblock',
 } as const;

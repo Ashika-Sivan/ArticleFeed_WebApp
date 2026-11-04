@@ -70,13 +70,16 @@ const ArticleCard = ({
           <img
             src={article.images[0]}
             alt={article.title}
+            onClick={() => onOpenModal(article)}
             style={{
               width: '100%',
-              height: '140px',
+              height: '160px',
               objectFit: 'cover',
               borderRadius: 'var(--radius-sm)',
               marginBottom: '0.75rem',
               border: '1px solid var(--border-color)',
+              cursor: 'pointer',
+              transition: 'transform 0.2s ease, opacity 0.2s ease',
             }}
             onError={(e) => {
               e.target.style.display = 'none';

@@ -3,10 +3,10 @@ import { RegisterDTO, IUserDocument } from '../types/index.js';
 import {
   IUserRepository,
   ITokenService,
-  IOtpService,
   IAuthService,
   AuthResult,
   RegisterResult,
+  RefreshResult,
   SanitizedUser,
 } from '../interfaces/index.js';
 import { AppError } from '../middleware/errorHandler.js';
@@ -20,15 +20,14 @@ export const sanitizeUser = (user: IUserDocument): SanitizedUser => ({
   email: user.email,
   phone: user.phone,
   dob: user.dob,
-  isVerified: user.isVerified,
+  isVerified: user.isVerified ?? true,
   preferences: user.preferences,
 });
 
 export class AuthService implements IAuthService {
   constructor(
     private readonly userRepo: IUserRepository,
-    private readonly tokenServ: ITokenService,
-    private readonly otpServ: IOtpService
+    private readonly tokenServ: ITokenService
   ) {}
 
   async register(data: RegisterDTO): Promise<RegisterResult> {
@@ -68,74 +67,25 @@ export class AuthService implements IAuthService {
       throw error;
     }
 
-    await this.userRepo.create({
+    const user = await this.userRepo.create({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       phone: cleanPhone,
       email: cleanEmail,
       dob: new Date(dob),
       password,
-      isVerified: false,
+      isVerified: true,
       preferences: Array.isArray(preferences) ? preferences : [],
     });
 
-    // Store OTP in Redis/Memory and dispatch notification
-    const otp = await this.otpServ.createOtp(cleanEmail);
+    const accessToken = this.tokenServ.generateToken(user._id);
+    const refreshToken = this.tokenServ.generateRefreshToken(user._id);
 
     return {
-      message: MESSAGES.OTP.SENT,
-      email: cleanEmail,
-      requiresOtp: true,
-      devOtp: !process.env.EMAIL_USER ? otp : undefined,
-    };
-  }
-
-  async verifyOtp(email: string, otp: string): Promise<AuthResult> {
-    if (!email || !otp) {
-      const error: AppError = new Error(MESSAGES.AUTH.REQUIRED_FIELDS);
-      error.statusCode = 400;
-      throw error;
-    }
-
-    const cleanEmail = email.toLowerCase().trim();
-    await this.otpServ.verifyOtp(cleanEmail, otp);
-
-    const updatedUser = await this.userRepo.updateAuthenticationStatus(cleanEmail, true);
-    if (!updatedUser) {
-      const error: AppError = new Error(MESSAGES.USER.NOT_FOUND);
-      error.statusCode = 404;
-      throw error;
-    }
-
-    const token = this.tokenServ.generateToken(updatedUser._id);
-    return { token, user: sanitizeUser(updatedUser) };
-  }
-
-  async resendOtp(email: string): Promise<{ message: string; devOtp?: string }> {
-    if (!email) {
-      const error: AppError = new Error(MESSAGES.AUTH.REQUIRED_FIELDS);
-      error.statusCode = 400;
-      throw error;
-    }
-
-    const cleanEmail = email.toLowerCase().trim();
-    const user = await this.userRepo.findByEmail(cleanEmail);
-    if (!user) {
-      const error: AppError = new Error(MESSAGES.USER.NOT_FOUND);
-      error.statusCode = 404;
-      throw error;
-    }
-
-    if (user.isVerified) {
-      const error: AppError = new Error('User is already verified. Please log in.');
-      error.statusCode = 400;
-      throw error;
-    }
-
-    const otp = await this.otpServ.createOtp(cleanEmail);
-    return {
-      message: MESSAGES.OTP.SENT,
-      devOtp: !process.env.EMAIL_USER ? otp : undefined,
+      message: MESSAGES.AUTH.REGISTER_SUCCESS,
+      accessToken,
+      refreshToken,
+      user: sanitizeUser(user),
     };
   }
 
@@ -162,15 +112,39 @@ export class AuthService implements IAuthService {
       throw error;
     }
 
-    if (user.isVerified === false) {
-      await this.otpServ.createOtp(user.email);
-      const error: AppError = new Error(MESSAGES.OTP.USER_NOT_VERIFIED);
-      error.statusCode = 403;
+    const accessToken = this.tokenServ.generateToken(user._id);
+    const refreshToken = this.tokenServ.generateRefreshToken(user._id);
+
+    return { accessToken, refreshToken, user: sanitizeUser(user) };
+  }
+
+  async refresh(refreshToken: string): Promise<RefreshResult> {
+    if (!refreshToken) {
+      const error: AppError = new Error(MESSAGES.AUTH.INVALID_EXPIRED_TOKEN);
+      error.statusCode = 401;
       throw error;
     }
 
-    const token = this.tokenServ.generateToken(user._id);
-    return { token, user: sanitizeUser(user) };
+    let decoded: { id: string };
+    try {
+      decoded = this.tokenServ.verifyRefreshToken<{ id: string }>(refreshToken);
+    } catch {
+      const error: AppError = new Error(MESSAGES.AUTH.INVALID_EXPIRED_TOKEN);
+      error.statusCode = 401;
+      throw error;
+    }
+
+    const user = await this.userRepo.findById(decoded.id);
+    if (!user) {
+      const error: AppError = new Error(MESSAGES.AUTH.TOKEN_USER_NOT_FOUND);
+      error.statusCode = 401;
+      throw error;
+    }
+
+    const newAccessToken = this.tokenServ.generateToken(user._id);
+    const newRefreshToken = this.tokenServ.generateRefreshToken(user._id);
+
+    return { accessToken: newAccessToken, refreshToken: newRefreshToken };
   }
 
   async getProfile(userId: string | Types.ObjectId): Promise<IUserDocument> {

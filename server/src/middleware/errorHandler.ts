@@ -16,21 +16,34 @@ export const errorHandler = (
 ): Response => {
   const statusCode = err.statusCode || (res.statusCode === 200 ? 500 : res.statusCode || 500);
 
-  // Friendly MongoDB duplicate key error handling
+  // Handle MongoDB Duplicate Key Error (E11000)
   if (err.code === 11000 && err.keyValue) {
     const field = Object.keys(err.keyValue)[0];
+    const fieldLabels: Record<string, string> = {
+      email: 'Email address',
+      phone: 'Phone number',
+    };
+    const label = fieldLabels[field] || field.charAt(0).toUpperCase() + field.slice(1);
     return res.status(400).json({
       success: false,
-      message: `${field.charAt(0).toUpperCase() + field.slice(1)} ${MESSAGES.COMMON.ALREADY_EXISTS_SUFFIX}`,
+      message: `${label} is already registered. Please use another one or log in.`,
     });
   }
 
-  // Friendly Mongoose validation error handling
+  // Handle Mongoose Validation Errors
   if (err.name === 'ValidationError' && err.errors) {
     const messages = Object.values(err.errors).map((val) => val.message);
     return res.status(400).json({
       success: false,
-      message: messages.join('. '),
+      message: messages[0] || 'Please check the information you entered and try again.',
+    });
+  }
+
+  // Handle Mongoose Invalid ID (CastError)
+  if (err.name === 'CastError') {
+    return res.status(400).json({
+      success: false,
+      message: 'The requested item could not be found.',
     });
   }
 

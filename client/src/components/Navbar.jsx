@@ -11,14 +11,28 @@ import {
   LogIn,
   UserPlus,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { toastConfirm } from '../utils/toastConfirm';
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+  const handleLogout = () => {
+    toastConfirm({
+      message: 'Are you sure you want to log out?',
+      confirmText: 'Log Out',
+      cancelText: 'Cancel',
+      onConfirm: async () => {
+        try {
+          await logout();
+          toast.success('Logged out successfully.');
+          navigate('/login', { replace: true });
+        } catch {
+          toast.error('Failed to log out.');
+        }
+      },
+    });
   };
 
   return (
