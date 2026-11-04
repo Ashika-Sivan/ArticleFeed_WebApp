@@ -16,18 +16,24 @@ import { API_PREFIXES, MESSAGES } from './constants/index.js';
 
 const app = express();
 
-// Connect to Database & Redis
-connectDB();
-redisClient.connect();
+// Connect to Database & Redis in persistent environments
+if (!process.env.VERCEL) {
+  connectDB();
+  redisClient.connect();
+}
 
 // Middlewares
 app.use(async (_req, _res, next) => {
-  await connectDB();
+  try {
+    await connectDB();
+  } catch (err) {
+    console.error('[DB Middleware Error]:', err);
+  }
   next();
 });
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: true, // Dynamically allow calling origin with credentials
     credentials: true,
   })
 );
@@ -70,8 +76,10 @@ app.use((_req: Request, res: Response) => {
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`[Chronicle Server] Running on http://localhost:${PORT}`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`[Chronicle Server] Running on http://localhost:${PORT}`);
+  });
+}
 
 export default app;
