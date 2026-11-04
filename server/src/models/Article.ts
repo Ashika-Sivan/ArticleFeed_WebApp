@@ -58,8 +58,7 @@ const articleSchema = new Schema<IArticleDocument>(
 articleSchema.index({ category: 1, createdAt: -1 });
 articleSchema.index({ author: 1 });
 
-export const Article: Model<IArticleDocument> = mongoose.model<IArticleDocument>(
-  'Article',
-  articleSchema
-);
+export const Article: Model<IArticleDocument> =
+  (mongoose.models.Article as Model<IArticleDocument>) ||
+  mongoose.model<IArticleDocument>('Article', articleSchema);
 export default Article;

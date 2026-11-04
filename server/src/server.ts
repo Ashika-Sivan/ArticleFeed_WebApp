@@ -42,13 +42,17 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 app.use(morgan('dev'));
 
-// Routes
+// Routes (mounted both with and without /api prefix for robust Vercel rewrite compatibility)
 app.use(API_PREFIXES.AUTH, authRoutes);
 app.use(API_PREFIXES.ARTICLES, articleRoutes);
 app.use(API_PREFIXES.USERS, userRoutes);
 
+app.use('/auth', authRoutes);
+app.use('/articles', articleRoutes);
+app.use('/users', userRoutes);
+
 // Health check route
-app.get(API_PREFIXES.HEALTH, async (_req: Request, res: Response) => {
+app.get([API_PREFIXES.HEALTH, '/health'], async (_req: Request, res: Response) => {
   try {
     await connectDB();
     const isDbConnected = mongoose.connection.readyState === 1;
