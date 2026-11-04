@@ -20,6 +20,10 @@ connectDB();
 redisClient.connect();
 
 // Middlewares
+app.use(async (_req, _res, next) => {
+  await connectDB();
+  next();
+});
 app.use(
   cors({
     origin: process.env.CLIENT_URL || 'http://localhost:5173',
