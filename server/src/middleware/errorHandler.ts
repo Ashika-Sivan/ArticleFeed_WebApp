@@ -14,6 +14,7 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction
 ): Response => {
+  console.error('[Error Handler Caught]:', err);
   const statusCode = err.statusCode || (res.statusCode === 200 ? 500 : res.statusCode || 500);
 
   // Handle MongoDB Duplicate Key Error (E11000)

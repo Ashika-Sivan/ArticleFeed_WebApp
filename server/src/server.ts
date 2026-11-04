@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import express, { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
@@ -41,8 +42,23 @@ app.use(API_PREFIXES.ARTICLES, articleRoutes);
 app.use(API_PREFIXES.USERS, userRoutes);
 
 // Health check route
-app.get(API_PREFIXES.HEALTH, (_req: Request, res: Response) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get(API_PREFIXES.HEALTH, async (_req: Request, res: Response) => {
+  try {
+    await connectDB();
+    const isDbConnected = mongoose.connection.readyState === 1;
+    res.status(200).json({
+      status: 'ok',
+      database: isDbConnected ? 'connected' : 'disconnected',
+      hasMongoUri: !!process.env.MONGODB_URI,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      message: (err as Error).message,
+      hasMongoUri: !!process.env.MONGODB_URI,
+    });
+  }
 });
 
 // 404 Handler
