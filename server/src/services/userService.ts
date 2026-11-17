@@ -3,7 +3,7 @@ import { UpdateProfileDTO, ChangePasswordDTO, IUserDocument } from '../types/ind
 import { IUserRepository, IUserService, SanitizedUser } from '../interfaces/index.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { sanitizeUser } from './authService.js';
-import { MESSAGES } from '../constants/index.js';
+import { MESSAGES, HttpStatus } from '../constants/index.js';
 
 export class UserService implements IUserService {
   constructor(private readonly userRepo: IUserRepository) {}
@@ -17,7 +17,7 @@ export class UserService implements IUserService {
     const user = await this.userRepo.findById(userId);
     if (!user) {
       const error: AppError = new Error(MESSAGES.USER.NOT_FOUND);
-      error.statusCode = 404;
+      error.statusCode = HttpStatus.NOT_FOUND;
       throw error;
     }
 
@@ -27,7 +27,7 @@ export class UserService implements IUserService {
       const existingEmail = await this.userRepo.findByEmail(cleanEmail);
       if (existingEmail && existingEmail._id.toString() !== userId.toString()) {
         const error: AppError = new Error(MESSAGES.USER.EMAIL_TAKEN);
-        error.statusCode = 400;
+        error.statusCode = HttpStatus.BAD_REQUEST;
         throw error;
       }
       user.email = cleanEmail;
@@ -38,7 +38,7 @@ export class UserService implements IUserService {
       const existingPhone = await this.userRepo.findByPhone(cleanPhone);
       if (existingPhone && existingPhone._id.toString() !== userId.toString()) {
         const error: AppError = new Error(MESSAGES.USER.PHONE_TAKEN);
-        error.statusCode = 400;
+        error.statusCode = HttpStatus.BAD_REQUEST;
         throw error;
       }
       user.phone = cleanPhone;
@@ -59,33 +59,33 @@ export class UserService implements IUserService {
   ): Promise<{ message: string }> {
     if (!currentPassword || !newPassword || !confirmPassword) {
       const error: AppError = new Error(MESSAGES.USER.PASSWORD_FIELDS_REQUIRED);
-      error.statusCode = 400;
+      error.statusCode = HttpStatus.BAD_REQUEST;
       throw error;
     }
 
     if (newPassword !== confirmPassword) {
       const error: AppError = new Error(MESSAGES.USER.NEW_PASSWORDS_DO_NOT_MATCH);
-      error.statusCode = 400;
+      error.statusCode = HttpStatus.BAD_REQUEST;
       throw error;
     }
 
     if (newPassword.length < 6) {
       const error: AppError = new Error(MESSAGES.USER.NEW_PASSWORD_MIN_LENGTH);
-      error.statusCode = 400;
+      error.statusCode = HttpStatus.BAD_REQUEST;
       throw error;
     }
 
     const user = await this.userRepo.findByIdWithPassword(userId);
     if (!user) {
       const error: AppError = new Error(MESSAGES.USER.NOT_FOUND);
-      error.statusCode = 404;
+      error.statusCode = HttpStatus.NOT_FOUND;
       throw error;
     }
 
     const isMatch = await user.matchPassword(currentPassword);
     if (!isMatch) {
       const error: AppError = new Error(MESSAGES.USER.CURRENT_PASSWORD_INCORRECT);
-      error.statusCode = 400;
+      error.statusCode = HttpStatus.BAD_REQUEST;
       throw error;
     }
 
@@ -101,14 +101,14 @@ export class UserService implements IUserService {
   ): Promise<IUserDocument> {
     if (!Array.isArray(preferences)) {
       const error: AppError = new Error(MESSAGES.USER.PREFERENCES_MUST_BE_ARRAY);
-      error.statusCode = 400;
+      error.statusCode = HttpStatus.BAD_REQUEST;
       throw error;
     }
 
     const user = await this.userRepo.updatePreferences(userId, preferences);
     if (!user) {
       const error: AppError = new Error(MESSAGES.USER.NOT_FOUND);
-      error.statusCode = 404;
+      error.statusCode = HttpStatus.NOT_FOUND;
       throw error;
     }
 

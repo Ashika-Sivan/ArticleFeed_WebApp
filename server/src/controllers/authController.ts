@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { IAuthService, ITokenService } from '../interfaces/index.js';
 import { AuthRequest } from '../types/index.js';
 import asyncHandler from '../utils/asyncHandler.js';
-import { MESSAGES } from '../constants/index.js';
+import { MESSAGES, HttpStatus } from '../constants/index.js';
 
 const ACCESS_TOKEN_COOKIE = 'accessToken';
 const REFRESH_TOKEN_COOKIE = 'refreshToken';
@@ -19,7 +19,7 @@ export class AuthController {
     res.cookie(ACCESS_TOKEN_COOKIE, result.accessToken, this.tokenServ.getCookieOptions());
     res.cookie(REFRESH_TOKEN_COOKIE, result.refreshToken, this.tokenServ.getRefreshCookieOptions());
 
-    res.status(201).json({
+    res.status(HttpStatus.CREATED).json({
       success: true,
       message: result.message,
       user: result.user,
@@ -33,7 +33,7 @@ export class AuthController {
     res.cookie(ACCESS_TOKEN_COOKIE, result.accessToken, this.tokenServ.getCookieOptions());
     res.cookie(REFRESH_TOKEN_COOKIE, result.refreshToken, this.tokenServ.getRefreshCookieOptions());
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: MESSAGES.AUTH.LOGIN_SUCCESS,
       user: result.user,
@@ -49,7 +49,7 @@ export class AuthController {
     const refreshToken: string | undefined = req.cookies?.[REFRESH_TOKEN_COOKIE];
 
     if (!refreshToken) {
-      res.status(401).json({ success: false, message: MESSAGES.AUTH.INVALID_EXPIRED_TOKEN });
+      res.status(HttpStatus.UNAUTHORIZED).json({ success: false, message: MESSAGES.AUTH.INVALID_EXPIRED_TOKEN });
       return;
     }
 
@@ -58,7 +58,7 @@ export class AuthController {
     res.cookie(ACCESS_TOKEN_COOKIE, result.accessToken, this.tokenServ.getCookieOptions());
     res.cookie(REFRESH_TOKEN_COOKIE, result.refreshToken, this.tokenServ.getRefreshCookieOptions());
 
-    res.status(200).json({ success: true, accessToken: result.accessToken });
+    res.status(HttpStatus.OK).json({ success: true, accessToken: result.accessToken });
   });
 
   logoutUser = (_req: Request, res: Response): void => {
@@ -66,7 +66,7 @@ export class AuthController {
     res.cookie(ACCESS_TOKEN_COOKIE, '', { httpOnly: true, expires: new Date(0) });
     res.cookie(REFRESH_TOKEN_COOKIE, '', { httpOnly: true, expires: new Date(0) });
 
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       success: true,
       message: MESSAGES.AUTH.LOGOUT_SUCCESS,
     });
@@ -74,10 +74,10 @@ export class AuthController {
 
   getMe = asyncHandler(async (req: AuthRequest, res: Response) => {
     if (!req.user) {
-      res.status(401).json({ success: false, message: MESSAGES.AUTH.UNAUTHENTICATED });
+      res.status(HttpStatus.UNAUTHORIZED).json({ success: false, message: MESSAGES.AUTH.UNAUTHENTICATED });
       return;
     }
     const user = await this.authServ.getProfile(req.user._id);
-    res.status(200).json({ success: true, user });
+    res.status(HttpStatus.OK).json({ success: true, user });
   });
 }

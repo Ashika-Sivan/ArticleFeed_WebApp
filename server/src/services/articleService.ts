@@ -15,7 +15,7 @@ import {
   ToggleReactionResult,
 } from '../interfaces/index.js';
 import { AppError } from '../middleware/errorHandler.js';
-import { MESSAGES } from '../constants/index.js';
+import { MESSAGES, HttpStatus } from '../constants/index.js';
 
 export const getAuthorId = (author: Types.ObjectId | IUser): string => {
   if (author instanceof Types.ObjectId) {
@@ -44,7 +44,7 @@ export class ArticleService implements IArticleService {
     const user = await this.userRepo.findById(userId);
     if (!user) {
       const error: AppError = new Error(MESSAGES.USER.NOT_FOUND);
-      error.statusCode = 404;
+      error.statusCode = HttpStatus.NOT_FOUND;
       throw error;
     }
 
@@ -81,7 +81,7 @@ export class ArticleService implements IArticleService {
     const article = await this.articleRepo.findById(articleId);
     if (!article) {
       const error: AppError = new Error(MESSAGES.ARTICLE.NOT_FOUND);
-      error.statusCode = 404;
+      error.statusCode = HttpStatus.NOT_FOUND;
       throw error;
     }
 
@@ -116,7 +116,7 @@ export class ArticleService implements IArticleService {
     const article = await this.articleRepo.findById(articleId);
     if (!article) {
       const error: AppError = new Error(MESSAGES.ARTICLE.NOT_FOUND);
-      error.statusCode = 404;
+      error.statusCode = HttpStatus.NOT_FOUND;
       throw error;
     }
 
@@ -151,7 +151,7 @@ export class ArticleService implements IArticleService {
     const article = await this.articleRepo.findById(articleId);
     if (!article) {
       const error: AppError = new Error(MESSAGES.ARTICLE.NOT_FOUND);
-      error.statusCode = 404;
+      error.statusCode = HttpStatus.NOT_FOUND;
       throw error;
     }
 
@@ -168,7 +168,7 @@ export class ArticleService implements IArticleService {
     const article = await this.articleRepo.findById(articleId);
     if (!article) {
       const error: AppError = new Error(MESSAGES.ARTICLE.NOT_FOUND);
-      error.statusCode = 404;
+      error.statusCode = HttpStatus.NOT_FOUND;
       throw error;
     }
 
@@ -188,7 +188,7 @@ export class ArticleService implements IArticleService {
     const user = await this.userRepo.findById(userId);
     if (!user) {
       const error: AppError = new Error(MESSAGES.USER.NOT_FOUND);
-      error.statusCode = 404;
+      error.statusCode = HttpStatus.NOT_FOUND;
       throw error;
     }
 
@@ -223,7 +223,7 @@ export class ArticleService implements IArticleService {
 
     if (!title || !description || !category) {
       const error: AppError = new Error(MESSAGES.ARTICLE.REQUIRED_FIELDS);
-      error.statusCode = 400;
+      error.statusCode = HttpStatus.BAD_REQUEST;
       throw error;
     }
 
@@ -279,7 +279,7 @@ export class ArticleService implements IArticleService {
     const article = await this.articleRepo.findById(articleId, { populateAuthor: true });
     if (!article) {
       const error: AppError = new Error(MESSAGES.ARTICLE.NOT_FOUND);
-      error.statusCode = 404;
+      error.statusCode = HttpStatus.NOT_FOUND;
       throw error;
     }
     return article;
@@ -293,7 +293,7 @@ export class ArticleService implements IArticleService {
     const article = await this.articleRepo.findById(articleId);
     if (!article) {
       const error: AppError = new Error(MESSAGES.ARTICLE.NOT_FOUND);
-      error.statusCode = 404;
+      error.statusCode = HttpStatus.NOT_FOUND;
       throw error;
     }
 
@@ -301,7 +301,7 @@ export class ArticleService implements IArticleService {
 
     if (authorIdStr !== userId.toString()) {
       const error: AppError = new Error(MESSAGES.ARTICLE.NOT_AUTHORIZED_TO_EDIT);
-      error.statusCode = 403;
+      error.statusCode = HttpStatus.FORBIDDEN;
       throw error;
     }
 
@@ -329,7 +329,7 @@ export class ArticleService implements IArticleService {
     const article = await this.articleRepo.findById(articleId);
     if (!article) {
       const error: AppError = new Error(MESSAGES.ARTICLE.NOT_FOUND);
-      error.statusCode = 404;
+      error.statusCode = HttpStatus.NOT_FOUND;
       throw error;
     }
 
@@ -337,7 +337,7 @@ export class ArticleService implements IArticleService {
 
     if (authorIdStr !== userId.toString()) {
       const error: AppError = new Error(MESSAGES.ARTICLE.NOT_AUTHORIZED_TO_DELETE);
-      error.statusCode = 403;
+      error.statusCode = HttpStatus.FORBIDDEN;
       throw error;
     }
 

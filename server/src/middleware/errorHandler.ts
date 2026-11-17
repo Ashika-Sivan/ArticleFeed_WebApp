@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { MESSAGES } from '../constants/index.js';
+import { MESSAGES, HttpStatus } from '../constants/index.js';
 
 export interface AppError extends Error {
   statusCode?: number;
@@ -15,7 +15,11 @@ export const errorHandler = (
   _next: NextFunction
 ): Response => {
   console.error('[Error Handler Caught]:', err);
-  const statusCode = err.statusCode || (res.statusCode === 200 ? 500 : res.statusCode || 500);
+  const statusCode =
+    err.statusCode ||
+    (res.statusCode === HttpStatus.OK
+      ? HttpStatus.INTERNAL_SERVER_ERROR
+      : res.statusCode || HttpStatus.INTERNAL_SERVER_ERROR);
 
   // Handle MongoDB Duplicate Key Error (E11000)
   if (err.code === 11000 && err.keyValue) {
@@ -25,7 +29,7 @@ export const errorHandler = (
       phone: 'Phone number',
     };
     const label = fieldLabels[field] || field.charAt(0).toUpperCase() + field.slice(1);
-    return res.status(400).json({
+    return res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: `${label} is already registered. Please use another one or log in.`,
     });
@@ -34,7 +38,7 @@ export const errorHandler = (
   // Handle Mongoose Validation Errors
   if (err.name === 'ValidationError' && err.errors) {
     const messages = Object.values(err.errors).map((val) => val.message);
-    return res.status(400).json({
+    return res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: messages[0] || 'Please check the information you entered and try again.',
     });
@@ -42,7 +46,7 @@ export const errorHandler = (
 
   // Handle Mongoose Invalid ID (CastError)
   if (err.name === 'CastError') {
-    return res.status(400).json({
+    return res.status(HttpStatus.BAD_REQUEST).json({
       success: false,
       message: 'The requested item could not be found.',
     });

@@ -12,7 +12,7 @@ import errorHandler from './middleware/errorHandler.js';
 import authRoutes from './routes/authRoutes.js';
 import articleRoutes from './routes/articleRoutes.js';
 import userRoutes from './routes/userRoutes.js';
-import { API_PREFIXES, MESSAGES } from './constants/index.js';
+import { API_PREFIXES, MESSAGES, HttpStatus } from './constants/index.js';
 
 const app = express();
 
@@ -56,14 +56,14 @@ app.get([API_PREFIXES.HEALTH, '/health'], async (_req: Request, res: Response) =
   try {
     await connectDB();
     const isDbConnected = mongoose.connection.readyState === 1;
-    res.status(200).json({
+    res.status(HttpStatus.OK).json({
       status: 'ok',
       database: isDbConnected ? 'connected' : 'disconnected',
       hasMongoUri: !!process.env.MONGODB_URI,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
-    res.status(500).json({
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       status: 'error',
       message: (err as Error).message,
       hasMongoUri: !!process.env.MONGODB_URI,
@@ -73,7 +73,7 @@ app.get([API_PREFIXES.HEALTH, '/health'], async (_req: Request, res: Response) =
 
 // 404 Handler
 app.use((_req: Request, res: Response) => {
-  res.status(404).json({ success: false, message: MESSAGES.COMMON.ROUTE_NOT_FOUND });
+  res.status(HttpStatus.NOT_FOUND).json({ success: false, message: MESSAGES.COMMON.ROUTE_NOT_FOUND });
 });
 
 // Centralized Error handling middleware
